@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Tool Bơm Truyện Chờ Duyệt</title>
+    <style>
+        body { font-family: sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; background: #fff7ed; }
+        .container { background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 2px solid #f97316; }
+        h1 { color: #f97316; margin-bottom: 10px; }
+        button { padding: 15px 30px; font-size: 1.1rem; background: #f97316; color: white; border: none; border-radius: 8px; font-weight: bold; width: 100%; transition: 0.2s; margin-top: 20px; }
+        button:hover { background: #ea580c; }
+        #logs { margin-top: 20px; background: #262626; color: #fdba74; padding: 20px; border-radius: 8px; height: 300px; overflow-y: auto; font-family: monospace; }
+        .error { color: #f87171; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>⏳ Tool Bơm 10 Truyện Chờ Duyệt</h1>
+        <p>Tool này sẽ tạo 10 truyện mới và yêu cầu Admin duyệt.</p>
+        
+        <button id="btn-seed">🚀 BẮT ĐẦU BƠM (Status: Pending)</button>
+
+        <div id="logs">Ready.</div>
+    </div>
+
+    <script type="module">
+        import { db } from './js/firebase-config.js';
+        import { collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+        // DANH SÁCH 10 TRUYỆN MẪU (Bịa ra)
+        const PENDING_NOVELS = [
+            { title: "Kiếm Khách Vô Danh", author: "Lão Tiên Sinh", description: "Hành trình bái sư học đạo kiếm thuật...", genres: ["Kiếm Hiệp", "Cổ Trang"], coverUrl: "https://via.placeholder.com/300x450/4f46e5/fff?text=Kiếm+Hiệp" },
+            { title: "Hợp Đồng Với Ma Nữ", author: "Phong Trần", description: "Một hợp đồng định mệnh đổi linh hồn lấy sức mạnh tại thành phố New York.", genres: ["Đô Thị", "Huyền Huyễn"], coverUrl: "https://via.placeholder.com/300x450/1e293b/fff?text=Urban+Fantasy" },
+            { title: "Tu Tiên Online 24/7", author: "Coder Dạo", description: "Bị ép phải đăng nhập vào game tu tiên để chữa bệnh, main phát hiện mình cày cấp còn nhanh hơn đi làm.", genres: ["Võng Du", "Hệ Thống"], coverUrl: "https://via.placeholder.com/300x450/be185d/fff?text=Game+Online" },
+            { title: "Hoàng Hậu Chuyển Sinh", author: "Mộc Lan", description: "Nàng bị oan khuất ở kiếp trước, kiếp này tái sinh làm thiên kim nhà giàu để trả thù...", genres: ["Ngôn Tình", "Trọng Sinh"], coverUrl: "https://via.placeholder.com/300x450/fb7185/fff?text=Romance" },
+            { title: "Kỷ Nguyên Zombie", author: "Cố Chấp", description: "Thế giới chìm trong đại dịch, main phải tìm cách sinh tồn bằng một chiếc rìu cùn và chiếc balo rách.", genres: ["Mạt Thế", "Kinh Dị"], coverUrl: "https://via.placeholder.com/300x450/4b5563/fff?text=Apocalypse" },
+            { title: "Phế Vật Học Viện", author: "Thiếu Niên", description: "Trường học chỉ dành cho những người có năng lực đặc biệt, nhưng main lại là phế vật duy nhất.", genres: ["Học Đường", "Hành Động"], coverUrl: "https://via.placeholder.com/300x450/f9f9f9/333?text=School+Life" },
+            { title: "Đại Phản Diện", author: "Vô Thường", description: "Sống lại làm kẻ phản diện, nhưng quyết tâm không để bị main chính hành hạ như kiếp trước.", genres: ["Xuyên Không", "Hệ Thống"], coverUrl: "https://via.placeholder.com/300x450/1f2937/fff?text=Villain" },
+            { title: "Linh Khí Khôi Phục", author: "Đông Phương", description: "Linh khí toàn cầu hồi phục, con người bước vào thời đại tu luyện mới đầy hỗn loạn.", genres: ["Huyền Huyễn", "Đô Thị"], coverUrl: "https://via.placeholder.com/300x450/111827/fff?text=Linh+Khí" },
+            { title: "Mùa Hè Năm Ấy", author: "Anh Thư", description: "Một câu chuyện ngôn tình học đường nhẹ nhàng, trong trẻo về mối tình đầu.", genres: ["Ngôn Tình", "Thanh Xuân"], coverUrl: "https://via.placeholder.com/300x450/a5f3fc/0e7490?text=Thanh+Xuân" },
+            { title: "Hành Tinh Ma Quái", author: "Nhật Thần", description: "Một nhóm phi hành gia khám phá ra một hành tinh lạ, nơi các định luật vật lý không còn đúng nữa.", genres: ["Khoa Huyễn", "Phiêu Lưu"], coverUrl: "https://via.placeholder.com/300x450/06b6d4/fff?text=Sci-Fi" }
+        ];
+
+        const btn = document.getElementById('btn-seed');
+        const logs = document.getElementById('logs');
+
+        function log(msg, type = 'info') {
+            const div = document.createElement('div');
+            div.innerText = `> ${msg}`;
+            if (type === 'error') div.className = 'error';
+            logs.appendChild(div);
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        btn.addEventListener('click', async () => {
+            btn.disabled = true;
+            logs.innerHTML = '';
+            log("Đang quét User & Bơm truyện chờ duyệt...");
+
+            try {
+                // 1. Lấy danh sách User ID
+                const usersSnap = await getDocs(collection(db, "users"));
+                const userIds = usersSnap.docs.map(doc => doc.id);
+                
+                if (userIds.length === 0) {
+                    log("❌ Lỗi: Không tìm thấy User nào! Hãy chạy tool seed-users.html trước.", 'error');
+                    btn.disabled = false;
+                    return;
+                }
+
+                log(`✅ Tìm thấy ${userIds.length} User. Bắt đầu bơm...`);
+                let count = 0;
+
+                for (const novel of PENDING_NOVELS) {
+                    const randomUid = userIds[Math.floor(Math.random() * userIds.length)];
+
+                    const novelData = {
+                        ...novel,
+                        type: "Truyện Sáng Tác",
+                        uploaderId: randomUid,   
+                        isPending: true, // QUAN TRỌNG: Cần Admin duyệt
+                        isFeatured: false,
+                        viewCount: 0,
+                        createdAt: new Date().toISOString()
+                    };
+
+                    await addDoc(collection(db, "novels"), novelData);
+                    log(`📝 Đã tạo: "${novel.title}"`);
+                    count++;
+                }
+
+                log(`--- HOÀN TẤT! Đã thêm ${count} truyện chờ duyệt. ---`);
+                log(`👉 Vào trang Profile Admin -> Duyệt bài để kiểm tra.`);
+
+            } catch (e) {
+                console.error(e);
+                log(`❌ Lỗi nghiêm trọng: ${e.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

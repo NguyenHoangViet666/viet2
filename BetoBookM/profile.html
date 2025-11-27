@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang Cá Nhân - BetoBook</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+<body class="bg-slate-50 min-h-screen pb-12">
+
+    <div id="navbar"></div>
+    <div id="loading-screen" class="loading-screen"><div class="spinner"></div></div>
+
+    <main class="container" style="margin-top: 40px;">
+        <div class="profile-header">
+            <div class="profile-banner">
+                <div class="profile-nav">
+                    <button class="profile-tab-btn active" onclick="switchProfileTab('info')">Thông tin</button>
+                    <button class="profile-tab-btn" onclick="switchProfileTab('liked')">Tủ truyện</button>
+                    <button class="profile-tab-btn" onclick="switchProfileTab('posted')">Truyện đã đăng</button>
+                    <button id="tab-admin-btn" class="profile-tab-btn hidden" onclick="switchProfileTab('admin')">Quản trị</button>
+                </div>
+            </div>
+
+            <div class="profile-content">
+                <div class="avatar-container">
+                    <img id="user-avatar" class="avatar-img" src="https://via.placeholder.com/150" alt="">
+                    <label class="avatar-overlay">
+                        <span>📷</span>
+                        <input type="file" id="inp-avatar" hidden accept="image/*">
+                    </label>
+                </div>
+
+                <div id="tab-info" class="profile-section active" style="padding-top: 40px;">
+                    <h1 class="text-2xl font-bold flex items-center gap-2">
+                        <span id="user-name">...</span>
+                        <span id="user-role-badge"></span>
+                    </h1>
+                    <p id="user-email" class="text-slate-500 mt-1">...</p>
+                    
+                    <div id="edit-profile-form" class="mt-6 hidden max-w-md">
+                        <div class="flex gap-2">
+                            <input id="inp-username" class="form-input" placeholder="Tên hiển thị mới">
+                            <button onclick="updateUsername()" class="btn-read py-2 px-4 text-sm">Lưu</button>
+                        </div>
+                    </div>
+                    <button onclick="document.getElementById('edit-profile-form').classList.toggle('hidden')" class="mt-4 text-blue-600 text-sm font-bold hover:underline">✎ Sửa thông tin</button>
+                </div>
+
+                <div id="tab-liked" class="profile-section">
+                    <h2 class="text-xl font-bold mb-4">Tủ truyện yêu thích</h2>
+                    <div id="liked-list" class="novel-grid"></div>
+                </div>
+
+                <div id="tab-posted" class="profile-section">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold">Truyện của tôi</h2>
+                        <button onclick="openModal('modal-add-novel')" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700 flex items-center gap-2">
+                            <span>+</span> Đăng truyện
+                        </button>
+                    </div>
+                    <div id="posted-list" class="space-y-3"></div>
+                </div>
+
+                <div id="tab-admin" class="profile-section">
+                    <div class="flex gap-2 mb-6 border-b pb-2">
+                        <button onclick="switchAdminSubTab('approvals')" class="px-3 py-1 rounded bg-slate-100 font-bold text-sm hover:bg-slate-200">Duyệt bài</button>
+                        <button onclick="switchAdminSubTab('novels')" class="px-3 py-1 rounded bg-slate-100 font-bold text-sm hover:bg-slate-200">Tất cả truyện</button>
+                        <button onclick="switchAdminSubTab('users')" class="px-3 py-1 rounded bg-slate-100 font-bold text-sm hover:bg-slate-200">Quản lý User</button>
+                    </div>
+
+                    <div id="admin-approvals">
+                        <h3 class="font-bold text-lg mb-4">Truyện chờ duyệt</h3>
+                        <div id="pending-list" class="space-y-4"></div>
+                    </div>
+
+                    <div id="admin-users" class="hidden">
+                        <h3 class="font-bold text-lg mb-4">Danh sách người dùng</h3>
+                        <div id="user-list" class="space-y-2"></div>
+                    </div>
+                    
+                    <div id="admin-novels" class="hidden">
+                        <h3 class="font-bold text-lg mb-4">Quản lý tất cả truyện</h3>
+                        <div id="admin-all-novels-list" class="space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="modal-add-novel" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-2xl rounded-xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h3 class="font-bold text-xl">Đăng truyện mới</h3>
+                <button onclick="closeModal('modal-add-novel')" class="text-2xl">&times;</button>
+            </div>
+            <form id="form-add-novel" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="text-sm font-bold">Tên truyện</label><input id="new-title" class="w-full border p-2 rounded" required></div>
+                    <div><label class="text-sm font-bold">Tác giả</label><input id="new-author" class="w-full border p-2 rounded" required></div>
+                </div>
+                <div><label class="text-sm font-bold">Ảnh bìa (URL)</label><input id="new-cover" class="w-full border p-2 rounded" placeholder="https://..."></div>
+                <div><label class="text-sm font-bold">Mô tả</label><textarea id="new-desc" class="w-full border p-2 rounded h-24" required></textarea></div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-sm font-bold">Loại</label>
+                        <select id="new-type" class="w-full border p-2 rounded">
+                            <option value="Truyện Dịch">Truyện Dịch</option>
+                            <option value="Truyện Sáng Tác">Truyện Sáng Tác</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-sm font-bold">Trạng thái</label>
+                        <select id="new-status" class="w-full border p-2 rounded">
+                            <option value="Đang ra">Đang ra</option>
+                            <option value="Đã hoàn thành">Đã hoàn thành</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="closeModal('modal-add-novel')" class="px-4 py-2 border rounded">Hủy</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded font-bold">Đăng ngay</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module" src="./js/profile.js"></script>
+</body>
+</html>

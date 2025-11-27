@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Tool Bơm Truyện Nhật (Light Novel)</title>
+    <style>
+        body { font-family: sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; line-height: 1.6; background: #f0f2f5; }
+        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { color: #1e293b; margin-bottom: 10px; }
+        input { width: 100%; padding: 12px; border: 2px solid #ccc; border-radius: 6px; font-size: 1rem; margin-bottom: 20px; }
+        button { padding: 15px 30px; font-size: 1.1rem; background: #eab308; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.2s; }
+        button:hover { background: #ca8a04; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        #logs { margin-top: 20px; background: #1e293b; color: #4ade80; padding: 20px; border-radius: 8px; height: 300px; overflow-y: auto; font-family: monospace; }
+        .error { color: #ef4444; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🇯🇵 Tool Bơm 10 Light Novel Nhật</h1>
+        <p>Nhập <b>UID của Admin</b> (của ông) vào dưới đây để ông có quyền Sửa/Xóa truyện sau khi tạo.</p>
+        
+        <input type="text" id="admin-uid" placeholder="Paste UID của Admin vào đây (Ví dụ: 7s8df6s8d...)" />
+        
+        <button id="btn-seed">🚀 BẮT ĐẦU BƠM TRUYỆN</button>
+
+        <div id="logs">Chờ lệnh...</div>
+    </div>
+
+    <script type="module">
+        import { db } from './js/firebase-config.js';
+        import { collection, addDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+        // DANH SÁCH 10 TRUYỆN NHẬT (Dữ liệu chuẩn)
+        const JAPAN_NOVELS = [
+            {
+                title: "Overlord (Chúa Tể Bóng Tối)",
+                author: "Maruyama Kugane",
+                description: "Câu chuyện về Momonga, một game thủ bị mắc kẹt trong nhân vật của mình khi server game đóng cửa. Anh quyết định chinh phục thế giới mới bằng sức mạnh bá đạo của mình.",
+                coverUrl: "https://upload.wikimedia.org/wikipedia/en/2/21/Overlord_volume_1_cover.jpg",
+                genres: ["Dị Giới", "Hành Động", "Dark Fantasy"],
+                status: "Đang ra",
+                length: "Truyện dài"
+            },
+            {
+                title: "Tensei Shitara Slime Datta Ken",
+                author: "Fuse",
+                description: "Một nhân viên văn phòng bị sát hại và tái sinh ở thế giới khác dưới hình hài một con Slime yếu ớt, nhưng lại sở hữu kỹ năng độc nhất vô nhị.",
+                coverUrl: "https://upload.wikimedia.org/wikipedia/en/3/34/That_Time_I_Got_Reincarnated_as_a_Slime_light_novel_volume_1_cover.jpg",
+                genres: ["Dị Giới", "Phiêu Lưu", "Hài Hước"],
+                status: "Đang ra",
+                length: "Truyện dài"
+            },
+            {
+                title: "Sword Art Online",
+                author: "Reki Kawahara",
+                description: "Năm 2022, game thủ Kirito bị mắc kẹt trong một trò chơi thực tế ảo tử thần. Nếu chết trong game, anh cũng sẽ chết ngoài đời thực.",
+                coverUrl: "https://upload.wikimedia.org/wikipedia/en/7/76/Sword_Art_Online_light_novel_volume_1_cover.jpg",
+                genres: ["Võng Du", "Hành Động", "Lãng Mạn"],
+                status: "Đã hoàn thành",
+                length: "Truyện dài"
+            },
+            {
+                title: "No Game No Life",
+                author: "Kamiya Yuu",
+                description: "Hai anh em game thủ thiên tài Sora và Shiro được triệu hồi đến một thế giới nơi mọi thứ đều được quyết định bằng các trò chơi.",
+                coverUrl: "https://upload.wikimedia.org/wikipedia/en/6/65/No_Game_No_Life_vol_01_cover.jpg",
+                genres: ["Dị Giới", "Trí Tuệ", "Fantasy"],
+                status: "Tạm ngưng",
+                length: "Truyện dài"
+            },
+            {
+                title: "Re:Zero - Bắt Đầu Lại Ở Thế Giới Khác",
+                author: "Nagatsuki Tappei",
+                description: "Subaru Natsuki bị triệu hồi đến thế giới khác và phát hiện mình có khả năng 'Return by Death' - quay ngược thời gian mỗi khi chết.",
+                coverUrl: "https://upload.wikimedia.org/wikipedia/en/2/29/Re-Zero_kara_Hajimeru_Isekai_Seikatsu_light_novel_volume_1_cover.jpg",
+                genres: ["Dị Giới", "Tâm Lý", "Kinh Dị"],
+                status: "Đang ra",
+                length: "Truyện dài"
+            },
+            {
+                title: "Classroom of the Elite",
+                author: "Kinugasa Shōgo",
+                description: "Trường Cao trung Nâng cao Tokyo, nơi đào tạo tinh hoa Nhật Bản. Ayanokouji Kiyotaka, một thiên tài giấu nghề, nhập học vào lớp D tồi tệ nhất.",
+                coverUrl: "https://upload.wikimedia.org/wikipedia/en/6/6f/Classroom_of_the_Elite_light_novel_volume_1_cover.jpg",
+                genres: ["Học Đường", "Tâm Lý", "Đời Thường"],
+                status: "Đang ra",
+                length: "Truyện dài"
+            },
+            {
+                title: "KonoSuba",
+                author: "Akatsuki Natsume",
+                description: "Kazuma Satou chết một cách lãng xẹt và được nữ thần Aqua đưa đến thế giới khác. Cuộc hành trình hài hước của tổ đội vô dụng bắt đầu.",
+                coverUrl: "https://upload.wikimedia.org/wikipedia/en/3/32/Konosuba_light_novel_volume_1_cover.jpg",
+                genres: ["Dị Giới", "Hài Hước", "Parody"],
+                status: "Đã hoàn thành",
+                length: "Truyện dài"
+            },
+            {
+                title: "Mushoku Tensei (Thất Nghiệp Chuyển Sinh)",
+                author: "Rifujin na Magonote",
+                description: "Một gã NEET 34 tuổi bị đuổi khỏi nhà và chết do tai nạn xe tải. Hắn tái sinh thành Rudeus Greyrat ở thế giới phép thuật và quyết tâm sống lại cuộc đời.",
+                coverUrl: "https://upload.wikimedia.org/wikipedia/en/d/d7/Mushoku_Tensei_light_novel_volume_1_cover.jpg",
+                genres: ["Dị Giới", "Phiêu Lưu", "Harem"],
+                status: "Đã hoàn thành",
+                length: "Truyện dài"
+            },
+            {
+                title: "86 - Eighty Six",
+                author: "Asato Asato",
+                description: "Cuộc chiến giữa Cộng hòa San Magnolia và Đế quốc Giadian. Những người lính thuộc 'Khu 86' phải chiến đấu trong những cỗ máy không người lái.",
+                coverUrl: "https://upload.wikimedia.org/wikipedia/en/5/51/86_-_Eighty_Six_light_novel_volume_1_cover.jpg",
+                genres: ["Mecha", "Chiến Tranh", "Sci-Fi"],
+                status: "Đang ra",
+                length: "Truyện dài"
+            },
+            {
+                title: "Violet Evergarden",
+                author: "Akatsuki Kana",
+                description: "Violet, một cựu chiến binh, trở thành 'Búp bê ghi chép tự động' để hiểu ý nghĩa của câu nói 'Tôi yêu em' mà người chỉ huy đã nói với cô.",
+                coverUrl: "https://upload.wikimedia.org/wikipedia/en/8/86/Violet_Evergarden_vol_1.jpg",
+                genres: ["Đời Thường", "Lãng Mạn", "Cảm Động"],
+                status: "Đã hoàn thành",
+                length: "Truyện ngắn"
+            }
+        ];
+
+        const btn = document.getElementById('btn-seed');
+        const logs = document.getElementById('logs');
+        const uidInput = document.getElementById('admin-uid');
+
+        function log(msg, type = 'info') {
+            const div = document.createElement('div');
+            div.innerText = `> ${msg}`;
+            if (type === 'error') div.className = 'error';
+            logs.appendChild(div);
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        btn.addEventListener('click', async () => {
+            const uid = uidInput.value.trim();
+            if (!uid) {
+                alert("Vui lòng nhập UID Admin của ông vào!");
+                return;
+            }
+
+            btn.disabled = true;
+            logs.innerHTML = '';
+            log("Đang khởi động máy bơm...");
+
+            let count = 0;
+
+            for (const novel of JAPAN_NOVELS) {
+                try {
+                    const novelData = {
+                        ...novel,
+                        type: "Truyện Dịch", // Cố định là truyện dịch
+                        uploaderId: uid,     // Gán quyền sở hữu cho ông
+                        isPending: false,    // Duyệt luôn
+                        isFeatured: Math.random() < 0.5, // Random nổi bật 50%
+                        viewCount: Math.floor(Math.random() * 10000) + 500, // Fake view
+                        createdAt: new Date().toISOString()
+                    };
+
+                    await addDoc(collection(db, "novels"), novelData);
+                    
+                    log(`✅ Đã bơm: ${novel.title}`, 'success');
+                    count++;
+
+                } catch (e) {
+                    console.error(e);
+                    log(`❌ Lỗi: ${e.message}`, 'error');
+                }
+            }
+
+            log(`---------------------------------`);
+            log(`🎉 HOÀN TẤT! Đã thêm ${count} bộ truyện Nhật.`);
+            log(`👉 Vào trang chủ kiểm tra ngay!`);
+            btn.disabled = false;
+        });
+    </script>
+</body>
+</html>

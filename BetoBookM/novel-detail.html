@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi Tiết Truyện - BetoBook</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+<body class="bg-slate-50 min-h-screen pb-12">
+
+    <div id="navbar"></div>
+
+    <div id="loading-screen" class="loading-screen">
+        <div class="spinner"></div>
+    </div>
+
+    <main id="main-content" class="hidden">
+        
+        <div class="novel-header">
+            <img id="novel-bg" class="novel-bg" src="" alt="">
+            <div class="novel-info-container">
+                <div style="flex-shrink: 0; text-align: center;">
+                    <img id="novel-cover" class="novel-cover" src="" alt="">
+                    
+                    <button id="btn-like" class="btn-like w-full mt-4 rounded-lg" style="width: 100%; border-radius: 8px; justify-content: center; gap: 5px;">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                        <span id="like-text">Thích</span>
+                    </button>
+
+                    <div id="admin-actions" class="mt-4 space-y-2 hidden">
+                        <button onclick="openAddChapterModal()" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded flex items-center justify-center gap-2">
+                            <span>+</span> Thêm chương
+                        </button>
+                        <button onclick="openEditNovelModal()" class="w-full py-2 bg-white text-slate-700 hover:bg-slate-100 font-bold rounded flex items-center justify-center gap-2">
+                            <span>✎</span> Sửa truyện
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex-1 text-white">
+                    <h1 id="novel-title">Đang tải tên truyện...</h1>
+                    
+                    <div class="novel-author">
+                        <span id="novel-author">Tác giả</span> • 
+                        <span id="novel-status" class="bg-blue-600 px-2 py-0.5 rounded text-xs">...</span>
+                    </div>
+
+                    <div class="novel-stats">
+                        <div class="stat-item">
+                            <span class="stat-value" id="stat-chapters">0</span>
+                            <span class="stat-label">Chương</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="stat-views">0</span>
+                            <span class="stat-label">Lượt xem</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="stat-likes">0</span>
+                            <span class="stat-label">Lượt thích</span>
+                        </div>
+                    </div>
+
+                    <div class="action-buttons">
+                        <a id="btn-read-now" href="#" class="btn-read-now">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                            Đọc Ngay
+                        </a>
+                    </div>
+                    
+                    <div id="novel-genres" class="flex flex-wrap gap-2 mt-6"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="container" style="margin-top: 30px;">
+            <div class="novel-tabs">
+                <button class="tab-link active" onclick="switchTab('intro')">Giới thiệu</button>
+                <button class="tab-link" onclick="switchTab('chapters')">Danh sách chương (<span id="chap-count">0</span>)</button>
+                <button class="tab-link" onclick="switchTab('comments')">Bình luận (<span id="cmt-count">0</span>)</button>
+            </div>
+
+            <div id="tab-intro" class="tab-content active">
+                <div style="max-width: 850px; margin: 0 auto;"> <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                        <p id="novel-desc" class="whitespace-pre-wrap text-slate-600 leading-relaxed"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-chapters" class="tab-content">
+                <div style="max-width: 850px; margin: 0 auto;"> <div id="chapter-list-container" class="chapter-list">
+                        </div>
+                </div>
+            </div>
+
+            <div id="tab-comments" class="tab-content">
+                <div class="novel-body-slim"> <div class="content-box">
+                        <h3 class="box-title">💬 Bình luận (<span id="cmt-count">0</span>)</h3>
+                        
+                        <div id="comment-section">
+                            <div id="login-prompt" class="hidden" style="text-align:center; padding:30px; background:#f8fafc; border-radius:12px; margin-bottom:20px;">
+                                <p style="color:#64748b; margin-bottom:10px;">Bạn cần đăng nhập để tham gia thảo luận.</p>
+                                <a href="login.html" class="btn-login" style="display:inline-flex;">Đăng nhập ngay</a>
+                            </div>
+
+                            <div id="comment-form-container" class="comment-form-wrapper hidden">
+                                <img id="my-avatar-cmt" class="my-avatar-small" src="https://via.placeholder.com/40" alt="">
+                                <div class="comment-textarea-wrapper">
+                                    <textarea id="cmt-input" class="comment-textarea" placeholder="Chia sẻ suy nghĩ của bạn..."></textarea>
+                                    <button onclick="submitComment()" class="btn-send-comment">Gửi bình luận</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="comment-list" class="comment-list-wrapper"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="modal-add-chapter" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-3xl rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-4 border-b flex justify-between items-center bg-slate-50">
+                <h3 class="font-bold text-lg">Thêm chương mới</h3>
+                <button onclick="closeModal('modal-add-chapter')" class="text-slate-500 hover:text-red-500 font-bold text-xl">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto">
+                <div class="mb-4">
+                    <label class="block font-medium mb-1">Tên chương</label>
+                    <input id="inp-chap-title" type="text" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ví dụ: Chương 1: Mở đầu">
+                </div>
+                <div class="mb-4">
+                    <label class="block font-medium mb-1">Nội dung</label>
+                    <textarea id="inp-chap-content" class="w-full border p-2 rounded h-64 font-mono text-sm focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button onclick="closeModal('modal-add-chapter')" class="px-4 py-2 border rounded">Hủy</button>
+                    <button onclick="saveNewChapter()" class="px-4 py-2 bg-blue-600 text-white rounded font-bold hover:bg-blue-700">Đăng chương</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-edit-novel" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-2xl rounded-xl shadow-2xl p-6">
+            <h3 class="font-bold text-lg mb-4">Sửa thông tin truyện</h3>
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-bold mb-1">Tên truyện</label>
+                    <input id="edit-title" class="w-full border p-2 rounded">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-1">Tác giả</label>
+                    <input id="edit-author" class="w-full border p-2 rounded">
+                </div>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-bold mb-1">Ảnh bìa (URL)</label>
+                <input id="edit-cover" class="w-full border p-2 rounded">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-bold mb-1">Mô tả</label>
+                <textarea id="edit-desc" class="w-full border p-2 rounded h-24"></textarea>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeModal('modal-edit-novel')" class="px-4 py-2 border rounded">Hủy</button>
+                <button onclick="saveNovelInfo()" class="px-4 py-2 bg-blue-600 text-white rounded font-bold">Lưu thay đổi</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-delete-confirm" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm text-center">
+            <h3 class="font-bold text-lg mb-2">Xóa chương này?</h3>
+            <p class="text-slate-500 mb-6">Hành động này không thể hoàn tác.</p>
+            <div class="flex gap-4 justify-center">
+                <button onclick="closeModal('modal-delete-confirm')" class="px-4 py-2 border rounded">Hủy</button>
+                <button id="btn-confirm-delete" class="px-4 py-2 bg-red-600 text-white rounded font-bold">Xóa ngay</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>&copy; 2025 BetoBook. Nền tảng đọc truyện miễn phí.</p>
+    </footer>
+
+    <script type="module" src="./js/novel-detail.js"></script>
+</body>
+</html>
