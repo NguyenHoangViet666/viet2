@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Tool Dọn Dẹp Database</title>
+    <style>
+        body { font-family: sans-serif; padding: 40px; max-width: 600px; margin: 0 auto; background: #262626; color: white; }
+        .container { background: #333; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 2px solid #ef4444; }
+        h1 { color: #ef4444; margin-bottom: 20px; }
+        button { padding: 15px 30px; font-size: 1.1rem; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: bold; width: 100%; transition: 0.2s; }
+        button:hover { background: #dc2626; }
+        button:disabled { background: #666; cursor: not-allowed; }
+        #logs { margin-top: 20px; background: #1a1a1a; padding: 20px; border-radius: 8px; height: 300px; overflow-y: auto; font-family: monospace; font-size: 0.9rem; }
+        .error { color: #fca5a5; }
+        .success { color: #4ade80; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>💣 THÙNG RÁC HẠT NHÂN (Clear DB)</h1>
+        <p>Công cụ này sẽ xóa SẠCH SẼ toàn bộ dữ liệu (Truyện, User, Comment, Chương, Bài đăng) khỏi Firestore. KHÔNG THỂ KHÔI PHỤC!</p>
+        
+        <button id="btn-clear">KÍCH HOẠT XÓA SẠCH SẼ!</button>
+
+        <div id="logs">Chờ lệnh...</div>
+    </div>
+
+    <script type="module">
+        import { db } from './js/firebase-config.js';
+        import { collection, getDocs, writeBatch, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+        const COLLECTIONS_TO_WIPE = ['novels', 'users', 'comments', 'chapters', 'notifications', 'posts'];
+        const btn = document.getElementById('btn-clear');
+        const logs = document.getElementById('logs');
+
+        function log(msg, type = 'info') {
+            const div = document.createElement('div');
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            if (type === 'success') div.className = 'success';
+            if (type === 'error') div.className = 'error';
+            logs.appendChild(div);
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        btn.addEventListener('click', async () => {
+            if (!confirm("BẠN CÓ CHẮC CHẮN MUỐN XÓA TOÀN BỘ DATABASE KHÔNG?")) return;
+
+            btn.disabled = true;
+            logs.innerHTML = '';
+            log("🛑 Đã xác nhận. Bắt đầu dọn dẹp...");
+
+            for (const colName of COLLECTIONS_TO_WIPE) {
+                try {
+                    log(`Đang dọn collection: ${colName}...`);
+                    
+                    // Lấy tất cả documents trong collection
+                    const snapshot = await getDocs(collection(db, colName));
+                    
+                    if (snapshot.empty) {
+                        log(`[${colName}] Không có gì để xóa.`);
+                        continue;
+                    }
+                    
+                    // Dùng Batch để xóa hàng loạt (tối đa 500 document mỗi batch)
+                    const batch = writeBatch(db);
+                    let deleteCount = 0;
+                    
+                    snapshot.docs.forEach(d => {
+                        batch.delete(d.ref);
+                        deleteCount++;
+                    });
+                    
+                    await batch.commit();
+                    log(`[${colName}] Xóa thành công ${deleteCount} documents.`, 'success');
+
+                } catch (e) {
+                    log(`❌ Lỗi XÓA collection ${colName}: ${e.message}`, 'error');
+                    break; 
+                }
+            }
+
+            log(`--- HOÀN TẤT DỌN DẸP! ---`);
+            log(`👉 F5 lại web và bơm dữ liệu mới.`, 'success');
+            btn.disabled = false;
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Tool Nhồi User Ảo</title>
+    <style>
+        body { font-family: sans-serif; padding: 40px; max-width: 600px; margin: 0 auto; line-height: 1.6; }
+        button { padding: 15px 30px; font-size: 1.2rem; background: #2563eb; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        button:hover { background: #1d4ed8; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        #logs { margin-top: 20px; background: #f1f5f9; padding: 20px; border-radius: 8px; height: 300px; overflow-y: auto; border: 1px solid #cbd5e1; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+
+    <h1>🛠️ Tool Nhồi 10 User Test</h1>
+    <p>Bấm nút dưới để tạo tự động 10 user với đủ loại quyền (Admin, Mod, User, Author, Trans) vào Database.</p>
+    
+    <button id="btn-seed">🚀 Bắt đầu bơm dữ liệu</button>
+
+    <div id="logs">Chờ lệnh...</div>
+
+    <script type="module">
+        // Import trực tiếp từ Config và Firestore (Không qua db-service để tránh phụ thuộc)
+        import { db } from './js/firebase-config.js';
+        import { collection, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+        // Danh sách 10 User mẫu (Đủ role để test màu Badge)
+        const FAKE_USERS = [
+            { name: "Nguyễn Văn A", email: "nguyena@test.com", role: "Admin" },
+            { name: "Trần Thị B", email: "tranb@test.com", role: "Mod" },
+            { name: "Lê Văn C", email: "lec@test.com", role: "User" },
+            { name: "Phạm Văn D", email: "phamd@test.com", role: "User" },
+            { name: "Hoàng Thị E", email: "hoange@test.com", role: "Author" }, // Test role mới
+            { name: "Đặng Văn F", email: "dangf@test.com", role: "Translator" }, // Test role mới
+            { name: "Vũ Thị G", email: "vug@test.com", role: "User" },
+            { name: "Bùi Văn H", email: "buih@test.com", role: "Mod" },
+            { name: "Đỗ Thị I", email: "doi@test.com", role: "Author" },
+            { name: "Hồ Văn K", email: "hok@test.com", role: "User" }
+        ];
+
+        const btn = document.getElementById('btn-seed');
+        const logs = document.getElementById('logs');
+
+        function log(msg, type = 'info') {
+            const div = document.createElement('div');
+            div.innerText = msg;
+            if (type === 'success') div.className = 'success';
+            if (type === 'error') div.className = 'error';
+            logs.appendChild(div);
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        btn.addEventListener('click', async () => {
+            btn.disabled = true;
+            logs.innerHTML = '';
+            log("Đang khởi động...");
+
+            let count = 0;
+
+            for (const u of FAKE_USERS) {
+                try {
+                    // Tạo ID giả (nhưng cố định để dễ quản lý)
+                    const fakeId = `fake_user_${Date.now()}_${count}`;
+                    
+                    const userData = {
+                        id: fakeId,
+                        username: u.name,
+                        email: u.email,
+                        role: u.role, // Quan trọng: Viết hoa đúng chuẩn
+                        avatar: `https://i.pravatar.cc/150?u=${fakeId}`, // Lấy avatar ngẫu nhiên trên mạng
+                        likedNovelIds: [],
+                        createdAt: new Date().toISOString()
+                    };
+
+                    // Lưu vào Firestore
+                    await setDoc(doc(db, "users", fakeId), userData);
+                    
+                    log(`✅ Đã tạo: ${u.name} (${u.role})`, 'success');
+                    count++;
+
+                } catch (e) {
+                    console.error(e);
+                    log(`❌ Lỗi tạo ${u.name}: ${e.message}`, 'error');
+                }
+            }
+
+            log(`--- HOÀN TẤT! Đã thêm ${count} user. ---`);
+            log(`👉 Giờ hãy vào lại trang Profile (Tab Quản trị) để kiểm tra.`);
+            btn.disabled = false;
+        });
+    </script>
+</body>
+</html>
